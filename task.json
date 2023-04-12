@@ -1,10 +1,10 @@
 {
-  "path":"D:\\programmeren\\papa\\rume\\examples",
+  "txt_path":"data",
   "txt_files":[
     "RBS23_072A_05_d01.txt",
     "RBS23_072A_05_d01.txt"
   ],
-  "json_file":"RBS23_072A_01_d01.json",
+  "json_file":"simon.json",
   "normalization_interval":[180, 220],
   "subjects":[  
     {"element":"Ru", "channel_interval":[375, 425]},

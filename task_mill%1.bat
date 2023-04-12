@@ -1,1 +1,2 @@
-python D:\programmeren\papa\rume\task_mill.py %1
+%cd%
+python C:\soft\rume\task_mill.py %1

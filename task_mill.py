@@ -8,7 +8,7 @@ if len(sys.argv) == 1:
 
 with open(sys.argv[1], 'r') as f:
   TASK = json.load(f)
-DELIMITER = ';'
+DELIMITER = ','
 ISOTOPE = '4He'
 CSV_FILE = 'rume_results.csv'
 
@@ -19,7 +19,7 @@ with open(CSV_FILE, 'a+') as f:
 
 for txt_filename in TASK['txt_files']:
   
-  json_file = rume_package.combine(TASK['path']+'/'+TASK['json_file'], TASK['path']+'/'+txt_filename)
+  json_file = rume_package.combine(TASK['json_file'], TASK['txt_path']+'/'+txt_filename)
   simulation = rume_package.RutheldeSimulation(json_file, normalization_interval=TASK['normalization_interval'])
   rume_package.plot(simulation)
   with open(CSV_FILE, 'a+') as f:

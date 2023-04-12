@@ -1,7 +1,7 @@
 import json
 import os
 
-def combine(json_file:str, data_file:str, output='dict') -> dict:
+def combine(json_file:str, data_file:str) -> dict:
   '''
   returns the name of the outputfile (.dat)
   '''
