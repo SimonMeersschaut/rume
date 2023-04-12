@@ -1,0 +1,15 @@
+{
+  "path":"D:\\programmeren\\papa\\rume\\examples",
+  "txt_files":[
+    "RBS23_072A_05_d01.txt",
+    "RBS23_072A_05_d01.txt"
+  ],
+  "json_file":"RBS23_072A_01_d01.json",
+  "normalization_interval":[180, 220],
+  "subjects":[  
+    {"element":"Ru", "channel_interval":[375, 425]},
+    {"element":"Co", "channel_interval":[375, 425]},
+    {"element":"Pt", "channel_interval":[375, 425]},
+    {"element":"As", "channel_interval":[375, 425]}
+  ]
+}
