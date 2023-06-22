@@ -18,17 +18,21 @@ with open(CSV_FILE, 'a+') as f:
 
 
 for txt_filename in TASK['txt_files']:
-  
   json_file = rume_package.combine(TASK['json_file'], TASK['txt_path']+'/'+txt_filename)
+  print('analyzing '+str(json_file))
   simulation = rume_package.RutheldeSimulation(json_file, normalization_interval=TASK['normalization_interval'])
   rume_package.plot(simulation)
   with open(CSV_FILE, 'a+') as f:
     f.write(f'{txt_filename}{DELIMITER}{simulation.sample_id}{DELIMITER}{simulation.q:e}')
   for subject in TASK['subjects']:
+    print('subject :: '+subject['element'])
     sigma = simulation.calc_dsigma(rume_package.table.isotope(ISOTOPE), subject['element'])
     roi_sum = simulation.interval_sum(subject['channel_interval'])
-    Nt = roi_sum / (sigma * simulation.omega_particles) * 1.E+24
-    droi_sum = math.sqrt(roi_sum) / roi_sum
+    Nt = roi_sum / (sigma * simulation.omega_particles) * 1.E+24 / 1.E+15
+    if roi_sum == 0:
+      droi_sum = 1
+    else:
+      droi_sum = math.sqrt(roi_sum) / roi_sum
     DNt = Nt * droi_sum
 
     with open(CSV_FILE, 'a+') as f:
