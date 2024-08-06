@@ -3,6 +3,11 @@ import json
 import glob 
 from .surf import Q_COULOMB, table
 from . import surf
+import socket
+import math
+from .surf import table
+
+ISOTOPE = '4He'
 
 class RutheldeSimulation:
 
@@ -13,15 +18,17 @@ class RutheldeSimulation:
     self.normalization_begin = normalization_interval[0]
     self.normalization_end = normalization_interval[1]
   
-  def run(self, input_file:str) -> None:
+  def run(self, input_file:str, working_dir) -> None:
     dir_path = os.path.dirname(os.path.realpath(__file__))
     output_filename = input_file.split('/')[-1].split('\\')[-1].split('.')[0] + '.work.dat'
     ruthelde_exec = glob.glob(dir_path+'/ruthelde-*.jar')[0]
 
-    # input(input_file)
-    
-    LOC = '\\\\winbe.imec.be\\rbserd\\Users\\SimonM\\RBS_Rume_example_001\\'
-    os.system(f'java -jar {ruthelde_exec} simulate {LOC}{input_file} {LOC}{output_filename}')
+    # Run the Ruthelde Simulation
+    os.system(f'java -jar {ruthelde_exec} simulate  {working_dir}/{input_file} {working_dir}/{output_filename}')
+
+    # with open(f'{working_dir}/{input_file}', 'r') as f:
+    #   input_data = json.load(f)
+    # self.json_data = ruthelde_simulate(json.dumps(input_data))
 
     # simulation is done
     # read input data
@@ -34,14 +41,52 @@ class RutheldeSimulation:
   def load_dat_file(self, dat_file:str) -> None:
     with open(dat_file, 'r') as f:
       self.content = f.read().replace(',', '.')
-    self.initialize_convertion()
-  
-  def initialize_convertion(self) -> None:
+    
+    # initialize conversion
     self.step = (self.simulated_x[-1] - self.simulated_x[0])/(self.channel[-1] - self.channel[0])
     self.offset = self.simulated_x[0]
   
+  def update_aerial_density(self, task, template_file):
+    """Update the aerial density from the working file to the template file."""
+    # load in the template file
+    with open(template_file, 'r') as f:
+      template_data = json.load(f)
+
+    # calculate the aerial densities of the subjects
+    for subject in task['subjects']:
+      # print('subject :: '+subject['element'])
+      sigma = self.calc_dsigma(table.isotope(ISOTOPE), subject['element'])
+      roi_sum = self.interval_sum(subject['channel_interval'])
+      Nt = roi_sum / (sigma * self.omega_particles) * 1.E+24 / 1.E+15
+      if roi_sum == 0:
+          droi_sum = 1
+      else:
+          droi_sum = math.sqrt(roi_sum) / roi_sum
+          DNt = Nt * droi_sum
+
+      z = table.atomic_number(subject['element'])
+      # search the element by atomic number
+      for i, element in enumerate(template_data['target']['layerList'][0]['elementList']):
+        if element['atomicNumber'] == z:
+          element['arealDensity'] = Nt
+          break
+    
+    with open(template_file, 'w') as f:
+      json.dump(template_data, f)
+    
+  def update_charge(self, charge: int, template_file: str):
+    """Update the charge of the template file to the newly calculated value."""
+    # load in the template file
+    with open(template_file, 'r') as f:
+      template_data = json.load(f)
+    
+    template_data['experimentalSetup']['charge'] = charge
+
+    with open(template_file, 'w') as f:
+      json.dump(template_data, f)
+
+      
   def to_channel(self, x):
-    # print(x)
     return (x-self.offset)/self.step
 
   @property
@@ -101,7 +146,6 @@ class RutheldeSimulation:
   def solid_angle(self):
     '''in steradian'''
     return self.json_data['detectorSetup']['solidAngle'] *1.E-3
-
   
   @property
   def particles(self):
@@ -140,3 +184,51 @@ class RutheldeSimulation:
 
   def calc_dsigma(self, isotope1, element2):
     return surf.calc_dsigma(self.E_prim, self.theta, self.alpha, isotope1, element2) * self.calc_Fscreening(isotope1, element2)
+
+def ruthelde_simulate(input_data):
+  '''
+  Function input: request_type (str), data (str)
+  - request_type: 'OPTIMIZE_' or 'SIMULATE_'
+  - data: json file in a string, this should contain all the necessary information for the request
+  Function purpose: Connects to the server, sends the request and waits for the answer
+  Function returns: The response of the server as SIM-RESULT_{output}
+  '''
+  try:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+      # Connect to the server
+      s.connect(("localhost", 9090))
+      print(f"Connected to localhost:{9090}")
+
+      # Send the message
+      message = 'SIMULATE_' + input_data + "\n"
+      s.sendall(message.encode('utf-8'))
+      print(f"Succeeded in sending messsage")
+
+      end_of_transmission = "End_Of_Transmission\n"
+      s.sendall(end_of_transmission.encode('utf-8'))
+      print(f"Succeeded in sending transmission signal: {end_of_transmission}")
+
+      # Wait for response
+      response = b""
+      # The respons of the server will generally be too large, so in order to be able to receive the full respons we make use of a buffer
+      # The idea is that you keep reading parts of the response where each part is 4096 bytes in size.
+      # It's like splitting the response into different parts of a certain size and then adding all these parts together to be able to reconstruct the full response
+      # At some point the part you are reading will contain the end of the response so the size of the part will be less than 4096 bytes, then stop.
+      
+      s.settimeout(2.0)
+      while True:
+        try:
+          part = s.recv(4096)
+          response += part
+        except socket.timeout:
+          # If we hit a timeout, assume no more data is coming
+          print("Timeout reached, assuming end of message")
+          break
+      
+      print(f"Received response: {response.decode('utf-8')}")
+
+      return response.decode('utf-8')
+
+  except Exception as ex:
+      print("Error sending request to server.")
+      print(ex)

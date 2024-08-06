@@ -18,7 +18,7 @@ class PlotOptions:
 
 def plot(simulation:RutheldeSimulation, filename: str, y_log: bool, show_graph: bool, save_image: bool) -> None:
   simulation = simulation
-    
+  
   matplotlib.rcParams.update({'font.size': 14})
   matplotlib.rc('xtick', labelsize=10) 
   matplotlib.rc('ytick', labelsize=10) 

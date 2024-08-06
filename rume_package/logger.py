@@ -25,6 +25,8 @@ class CSVLogger:
     def log_simulation(self, simulation, task, txt_filename):
         """Save a RutheldeSimulation object in a csv file and a csv-backup file."""
         # 'sample' is a temporary variable that holds the data for the current line
+        if not('SampleId' in simulation.json_data):
+            simulation.json_data['SampleId'] = 'Not Found!'
         sample = [
             ("filename", txt_filename.split('.imec')[0]),
             ("ID", simulation.json_data['SampleId']),
