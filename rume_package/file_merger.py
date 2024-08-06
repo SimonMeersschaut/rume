@@ -3,6 +3,7 @@ import os
 
 def combine(json_file:str, data_file:str) -> dict:
   '''
+  Combines a json file and a datafile (.imec) into a .dat file.
   returns the name of the outputfile (.dat)
   '''
   # read data file

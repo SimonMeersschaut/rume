@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from dataclasses import dataclass
 
-@dataclass
+
 class PlotOptions:
   y_label = 'Yield (counts)'
 
@@ -16,49 +16,35 @@ class PlotOptions:
   second_color:str = '#000000'
   second_marker_size = 10
 
-def plot(simulation:RutheldeSimulation) -> None:
-  plt = Plot(simulation)
-  plt.show()
-
-class Plot:
-  def __init__(self, simulation:RutheldeSimulation, plot_options=None):
-    self.simulation = simulation
+def plot(simulation:RutheldeSimulation, filename: str, y_log: bool, show_graph: bool, save_image: bool) -> None:
+  simulation = simulation
     
-    if plot_options == None:
-      self.plot_options = PlotOptions()
-    else:
-      self.plot_options = plot_options
+  matplotlib.rcParams.update({'font.size': 14})
+  matplotlib.rc('xtick', labelsize=10) 
+  matplotlib.rc('ytick', labelsize=10) 
+
+  fig = plt.figure()
+  ax1 = fig.add_subplot(111)
+  plt.title(simulation.spectrum_name, fontdict={'fontsize':10}, loc='left')
+  ax1.set_xlabel(PlotOptions.first_x_label)
+  ax1.set_ylabel(PlotOptions.y_label)
+
+  y_values = [y*simulation.exp_sum/simulation.sim_sum for y in simulation.simulated_y]
+  ax1.plot(simulation.channel, y_values, c=PlotOptions.first_color)
+  ax1.scatter(simulation.channel, simulation.experimental_y, facecolors='none', edgecolors=PlotOptions.second_color, s=PlotOptions.second_marker_size)
+
+  ax2 = ax1.twiny()
   
-  def handle_click(self, event):
-    x, y = self.simulation.to_channel(event.xdata*1000), event.ydata
-    
-    # print (f'x = {x}, y = {y}')
-    self.ax2.set_title(f'({round(x, 1)}, {round(y, 1)})', fontdict={'fontsize':10}, loc='right')
-    plt.draw() #redraw
+  ax2.set_xlabel(PlotOptions.second_x_label)
+  ax2.plot([i/1000 for i in simulation.simulated_x], np.ones(len(simulation.simulated_x)), linestyle='None')
+  ax2.set_title('', fontdict={'fontsize':10}, loc='right')
 
-  def show(self):
-    matplotlib.rcParams.update({'font.size': 14})
-    matplotlib.rc('xtick', labelsize=10) 
-    matplotlib.rc('ytick', labelsize=10) 
+  if y_log:
+    plt.yscale("log") 
 
-    self.fig = plt.figure()
-    self.ax1 = self.fig.add_subplot(111)
-    plt.title(self.simulation.spectrum_name, fontdict={'fontsize':10}, loc='left')
-    self.ax1.set_xlabel(self.plot_options.first_x_label)
-    self.ax1.set_ylabel(self.plot_options.y_label)
+  plt.tight_layout()
 
-    y_values = [y*self.simulation.exp_sum/self.simulation.sim_sum for y in self.simulation.simulated_y]
-    self.ax1.plot(self.simulation.channel, y_values, c=self.plot_options.first_color)
-    self.ax1.scatter(self.simulation.channel, self.simulation.experimental_y, facecolors='none', edgecolors=self.plot_options.second_color, s=self.plot_options.second_marker_size)
-
-    self.ax2 = self.ax1.twiny()
-    
-    self.ax2.set_xlabel(self.plot_options.second_x_label)
-    self.ax2.plot([i/1000 for i in self.simulation.simulated_x], np.ones(len(self.simulation.simulated_x)), linestyle='None')
-    self.ax2.set_title('', fontdict={'fontsize':10}, loc='right')
-
-    cid = self.fig.canvas.mpl_connect('button_press_event', self.handle_click)
-
-    plt.tight_layout()
-    plt.savefig('rume.work.png')
-    # plt.show()
+  if save_image:
+    plt.savefig(filename)
+  if show_graph:
+    plt.show()

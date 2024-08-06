@@ -1,43 +1,42 @@
 import rume_package
 import json
 import sys
-import math
+import os
 
+# The script needs a task-input file
 if len(sys.argv) == 1:
   input('[ERROR] please provide a task file.')
+  exit()
 
+# Make sure to work from where the .bat was executed
+WORK_DIR = os.path.dirname(sys.argv[1])
+os.chdir(WORK_DIR)
+
+# read task file
 with open(sys.argv[1], 'r') as f:
-  TASK = json.load(f)
-DELIMITER = ','
-ISOTOPE = '4He'
-CSV_FILE = 'rume_results.csv'
+  task = json.load(f)
 
+# Prepare an excel file to write the simulations to
+csv_logger = rume_package.CSVLogger()
 
-with open(CSV_FILE, 'a+') as f:
-    f.write('\n')
+# execute the tasks
+for txt_filename in task['txt_files']:
+  # Combine .json and .imec into .dat for Ruthelde
+  json_file = rume_package.combine(task['json_file'], 'data/'+txt_filename)
 
+  # Initialize a simulation
+  simulation = rume_package.RutheldeSimulation(normalization_interval=task['normalization_interval'])
 
-for txt_filename in TASK['txt_files']:
-  json_file = rume_package.combine(TASK['json_file'], TASK['txt_path']+'/'+txt_filename)
-  print('analyzing '+str(json_file))
-  simulation = rume_package.RutheldeSimulation(json_file, normalization_interval=TASK['normalization_interval'])
-  rume_package.plot(simulation)
-  with open(CSV_FILE, 'a+') as f:
-    f.write(f'{txt_filename}{DELIMITER}{simulation.sample_id}{DELIMITER}{simulation.q:e}')
-  for subject in TASK['subjects']:
-    print('subject :: '+subject['element'])
-    sigma = simulation.calc_dsigma(rume_package.table.isotope(ISOTOPE), subject['element'])
-    roi_sum = simulation.interval_sum(subject['channel_interval'])
-    Nt = roi_sum / (sigma * simulation.omega_particles) * 1.E+24 / 1.E+15
-    if roi_sum == 0:
-      droi_sum = 1
-    else:
-      droi_sum = math.sqrt(roi_sum) / roi_sum
-    DNt = Nt * droi_sum
+  # Run the Ruthelde Simulation
+  print(f'Simulating {json_file}')
+  simulation.run(input_file=json_file)
 
-    with open(CSV_FILE, 'a+') as f:
-      f.write(f'{DELIMITER}{subject["element"]}{DELIMITER}{Nt:e}{DELIMITER}{DNt:e}')
+  # Save two plots as png (cartesian & logaritmic)
+  rume_package.plot(simulation, "rume.work.png", show_graph=False, save_image=True, y_log=False)
+  rume_package.plot(simulation, "rume-log.work.png", show_graph=False, save_image=True, y_log=True)
 
-    
-  with open(CSV_FILE, 'a+') as f:
-    f.write('\n')
+  # write the output in a csv file and csv backup file
+  csv_logger.log_simulation(simulation, task, txt_filename)
+
+csv_logger.write()
+csv_logger.close()

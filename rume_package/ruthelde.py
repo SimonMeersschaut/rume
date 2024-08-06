@@ -6,26 +6,29 @@ from . import surf
 
 class RutheldeSimulation:
 
-  def __init__(self, input_file:str, normalization_interval):
+  def __init__(self, normalization_interval):
     """
     input_file: .json
     """
     self.normalization_begin = normalization_interval[0]
     self.normalization_end = normalization_interval[1]
-
-    self.generate_output(input_file)
-    
-    with open(input_file, 'r') as f:
-      self.json_data = json.load(f)
   
-  def generate_output(self, input_file:str) -> None:
+  def run(self, input_file:str) -> None:
     dir_path = os.path.dirname(os.path.realpath(__file__))
     output_filename = input_file.split('/')[-1].split('\\')[-1].split('.')[0] + '.work.dat'
     ruthelde_exec = glob.glob(dir_path+'/ruthelde-*.jar')[0]
+
+    # input(input_file)
     
-    os.system(f'java -jar {ruthelde_exec} simulate {input_file} {output_filename}')
-    
-    # simulation is done, read output
+    LOC = '\\\\winbe.imec.be\\rbserd\\Users\\SimonM\\RBS_Rume_example_001\\'
+    os.system(f'java -jar {ruthelde_exec} simulate {LOC}{input_file} {LOC}{output_filename}')
+
+    # simulation is done
+    # read input data
+    with open(input_file, 'r') as f:
+      self.json_data = json.load(f)
+
+    # read output
     self.load_dat_file(output_filename)
   
   def load_dat_file(self, dat_file:str) -> None:
@@ -40,31 +43,14 @@ class RutheldeSimulation:
   def to_channel(self, x):
     # print(x)
     return (x-self.offset)/self.step
-  
-  @property
-  def sample_id(self):
-    return self.json_data['SampleId']
 
   @property
-  def header(self):
-    return self.content.split('</Header>')[0].split('<Header>')[-1]
-  
-  @property
   def spectrum_name(self):
-    return self.header.split('Spectra - ')[1].split('\n')[0]
-  
-  @property
-  def body(self):
-    return self.content.split('</Header>')[-1]
+    return self.content.split('</Header>')[0].split('<Header>')[-1].split('Spectra - ')[1].split('\n')[0]
   
   @property
   def data(self):
-    return [[float(datapoint) for datapoint in line.split()] for line in self.body.split('\n') if len(line.split()) > 0]
-  
-  @property
-  def charge(self):
-    '''charge in json-file (in micro Coulomb)'''
-    return self.json_data['experimentalSetup']['charge']
+    return [[float(datapoint) for datapoint in line.split()] for line in self.content.split('</Header>')[-1].split('\n') if len(line.split()) > 0]
   
   @property
   def channel(self):
@@ -109,7 +95,7 @@ class RutheldeSimulation:
   @property
   def q(self):
     '''actual scaled charge (in Coulomb)'''
-    return (self.exp_sum/self.sim_sum)*self.charge*1.E-6
+    return (self.exp_sum/self.sim_sum)*self.json_data['experimentalSetup']['charge']*1.E-6
     
   @property
   def solid_angle(self):
@@ -152,20 +138,5 @@ class RutheldeSimulation:
   def calc_Fscreening(self, isotope1, element2):
     return 1 - (0.049*isotope1[1]*(table.atomic_number(element2)**(4/3))) / (self.E_prim*1000)
 
-  # def surface_approximation(self, element2, x_min, x_max):
-  #   isotope1 = table.get_isotope_by_mass(
-  #     mass=self.json_data['experimentalSetup']['projectile']['M'],
-  #     z=self.json_data['experimentalSetup']['projectile']['Z']
-  #     )
-  #   dsigma = calc_dsigma(
-  #     E_prim=self.E_prim,
-  #     theta=self.theta,
-  #     alpha=self.alpha,
-  #     isotope1=isotope1,
-  #     elem2=element2
-  #   )
-  #   # print(dsigma)
-  #   return self.interval_sum(x_min, x_max) / (dsigma*self.omega_particles)
-  
   def calc_dsigma(self, isotope1, element2):
     return surf.calc_dsigma(self.E_prim, self.theta, self.alpha, isotope1, element2) * self.calc_Fscreening(isotope1, element2)
