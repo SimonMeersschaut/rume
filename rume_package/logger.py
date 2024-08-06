@@ -11,17 +11,20 @@ import math
 DELIMITER = ','
 ISOTOPE = '4He'
 CSV_FILE = 'rume_results.csv'
+BCKP_CSV_FILE = 'bckp_rume_results.csv'
 
 class CSVLogger:
     def __init__(self):
         """Initialize the CSV logger."""
+        self.samples = []
+    
     def log_simulation(self, simulation, task, txt_filename):
         """Save a RutheldeSimulation object in a csv file and a csv-backup file."""
-        # Each sample is translated to one line in the csv file
+        # 'sample' is a temporary variable that holds the data for the current line
         sample = [
             ("filename", txt_filename.split('.imec')[0]),
             ("ID", simulation.json_data['SampleId']),
-            ("Charge (μC)", simulation.q),
+            ("Charge (uC)", simulation.q * (10**6)),
         ]
         
         for subject in task['subjects']:
@@ -38,24 +41,44 @@ class CSVLogger:
 
             sample.append((subject['element'], Nt))
             sample.append((f'error {subject['element']}', DNt))
-
-            # with open(CSV_FILE, 'a+') as f:
-            #     f.write(f'{DELIMITER}{subject["element"]}{DELIMITER}{Nt:e}{DELIMITER}{DNt:e}')
+        
+        self.samples.append(sample)
 
     def write(self):
-        """Write the registered data to the csv file."""
-        print(self.samples)
+        """Prepare and write the registered data to the csv file."""
+        # STEP 1: prepare content
+        content = ''
+        # prepare the heading
+        # store ALL heading-items
+        headings = []
+        for sample in self.samples:
+            headings += [heading for (heading, _) in sample]
+        
+        # remove any duplicates from the list
+        headings = list(dict.fromkeys(headings))
 
+        # write headings to content variable
+        content += DELIMITER.join(headings)
+        content += '\n'
 
-    def close(self):
-        """Save and close the excel document."""
-        ...
+        # prepare body
+        for sample in self.samples:
+            for heading in headings:
+                # search the value corresponding with the current heading
+                value = [value for head_, value in sample if head_ == heading][0]
+                content += str(value) + DELIMITER
+            content += '\n'
 
-# with open(CSV_FILE, 'a+') as f:
-#     f.write(f"\n{txt_filename.split('.imec')[0]}{DELIMITER}{simulation.json_data['SampleId']}{DELIMITER}{simulation.q:e}")
-
-
-
-    
-# with open(CSV_FILE, 'a+') as f:
-#     f.write('\n')
+        # STEP 2: write content
+        try:
+            # write to the output file
+            with open(CSV_FILE, 'w+', encoding='utf-8') as f:
+                f.write(content)
+            
+            # also write to a backup file
+            with open(BCKP_CSV_FILE, 'a+', encoding='utf-8') as f:
+                f.write('\n')
+                f.write(content)
+        except PermissionError:
+            input('[ERROR] PermissionError. Perhaps you already opened the file?')
+            exit()

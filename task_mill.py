@@ -39,4 +39,3 @@ for txt_filename in task['txt_files']:
   csv_logger.log_simulation(simulation, task, txt_filename)
 
 csv_logger.write()
-csv_logger.close()
