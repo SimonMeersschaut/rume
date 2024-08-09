@@ -3,8 +3,8 @@ import os
 
 def combine(json_file:str, data_file:str) -> dict:
   '''
-  Combines a json file and a datafile (.imec) into a .dat file.
-  returns the name of the outputfile (.dat)
+  Combines a json file and a datafile (.imec).
+  returns the data
   '''
   # read data file
   with open(data_file, 'r') as f:
@@ -18,7 +18,7 @@ def combine(json_file:str, data_file:str) -> dict:
   data['SampleId'] = content.split(' * Sample ID             := ')[1].split('\n')[0]
 
   # dir_path = os.path.dirname(os.path.realpath(__file__))
-  filename = json_file.split('/')[-1].split('\\')[-1].split('.')[0] + '.work.json'
-  with open(filename, 'w+') as f:
-    json.dump(data, f)
-  return filename
+  # filename = json_file.split('/')[-1].split('\\')[-1].split('.')[0] + '.work.json'
+  # with open(filename, 'w+') as f:
+  #   json.dump(data, f)
+  return data

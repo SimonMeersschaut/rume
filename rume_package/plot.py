@@ -25,7 +25,7 @@ def plot(simulation:RutheldeSimulation, filename: str, y_log: bool, show_graph: 
 
   fig = plt.figure()
   ax1 = fig.add_subplot(111)
-  plt.title(simulation.spectrum_name, fontdict={'fontsize':10}, loc='left')
+  plt.title(simulation.json_data['SampleId'], fontdict={'fontsize':10}, loc='left')
   ax1.set_xlabel(PlotOptions.first_x_label)
   ax1.set_ylabel(PlotOptions.y_label)
 
@@ -36,8 +36,10 @@ def plot(simulation:RutheldeSimulation, filename: str, y_log: bool, show_graph: 
   ax2 = ax1.twiny()
   
   ax2.set_xlabel(PlotOptions.second_x_label)
-  ax2.plot([i/1000 for i in simulation.simulated_x], np.ones(len(simulation.simulated_x)), linestyle='None')
+  # ax2.plot([i/1000 for i in simulation.simulated_x], np.ones(len(simulation.simulated_x)), linestyle='None')
   ax2.set_title('', fontdict={'fontsize':10}, loc='right')
+  
+  plt.ylim(0.8, None)
 
   if y_log:
     plt.yscale("log") 

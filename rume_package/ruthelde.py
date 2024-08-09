@@ -17,34 +17,33 @@ class RutheldeSimulation:
     """
     self.normalization_begin = normalization_interval[0]
     self.normalization_end = normalization_interval[1]
+
+    self.simulated_y = []
   
-  def run(self, input_file:str, working_dir) -> None:
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    output_filename = input_file.split('/')[-1].split('\\')[-1].split('.')[0] + '.work.dat'
-    ruthelde_exec = glob.glob(dir_path+'/ruthelde-*.jar')[0]
-
+  def run(self, input_data:dict, working_dir) -> None:
     # Run the Ruthelde Simulation
-    os.system(f'java -jar {ruthelde_exec} simulate  {working_dir}/{input_file} {working_dir}/{output_filename}')
-
-    # with open(f'{working_dir}/{input_file}', 'r') as f:
-    #   input_data = json.load(f)
     # self.json_data = ruthelde_simulate(json.dumps(input_data))
 
-    # simulation is done
-    # read input data
-    with open(input_file, 'r') as f:
-      self.json_data = json.load(f)
+    self.json_data = input_data
 
-    # read output
-    self.load_dat_file(output_filename)
-  
-  def load_dat_file(self, dat_file:str) -> None:
-    with open(dat_file, 'r') as f:
-      self.content = f.read().replace(',', '.')
+    # Run the Ruthelde Simulation
+    # try:
+    self.simulation_output = ruthelde_simulate(input_data)
+    # except:
+    # if self.simulation_output is None:
+      # raise FileNotFoundError('No response from the server.')
+
+    print(self.simulation_output)
     
-    # initialize conversion
-    self.step = (self.simulated_x[-1] - self.simulated_x[0])/(self.channel[-1] - self.channel[0])
-    self.offset = self.simulated_x[0]
+    # simulation is done
+    # set attributes
+    self.experimental_y = self.json_data['experimentalSpectrum']
+    self.channel = list(range(len(self.experimental_y)))
+    self.simulated_y = self.simulation_output['spectra'][0]['data']
+    # self.sim_sum = sum(self.simulated_y)
+#
+    # self.step = (self.simulated_x[-1] - self.simulated_x[0])/(self.channel[-1] - self.channel[0])
+  #   self.offset = self.simulated_x[0]
   
   def update_aerial_density(self, task, template_file):
     """Update the aerial density from the working file to the template file."""
@@ -89,37 +88,37 @@ class RutheldeSimulation:
   def to_channel(self, x):
     return (x-self.offset)/self.step
 
-  @property
-  def spectrum_name(self):
-    return self.content.split('</Header>')[0].split('<Header>')[-1].split('Spectra - ')[1].split('\n')[0]
+  # @property
+  # def spectrum_name(self):
+  #   return self.content.split('</Header>')[0].split('<Header>')[-1].split('Spectra - ')[1].split('\n')[0]
   
-  @property
-  def data(self):
-    return [[float(datapoint) for datapoint in line.split()] for line in self.content.split('</Header>')[-1].split('\n') if len(line.split()) > 0]
+  # @property
+  # def data(self):
+  #   return [[float(datapoint) for datapoint in line.split()] for line in self.content.split('</Header>')[-1].split('\n') if len(line.split()) > 0]
   
-  @property
-  def channel(self):
-    return [line[0] for line in self.data]
+  # @property
+  # def channel(self):
+  #   return [line[0] for line in self.data]
   
-  @property
-  def simulated_x(self):
-    '''energy (in keV)'''
-    return [line[1] for line in self.data]
+  # @property
+  # def simulated_x(self):
+  #   '''energy (in keV)'''
+  #   return [line[1] for line in self.data]
   
-  @property
-  def simulated_y(self):
-    '''simulated spectrum (in counts)'''
-    return [line[2] for line in self.data]
+  # @property
+  # def simulated_y(self):
+  #   '''simulated spectrum (in counts)'''
+  #   return [line[2] for line in self.data]
   
-  @property
-  def experimental_x(self):
-    '''energy (in keV)'''
-    return [line[3] for line in self.data]
+  # @property
+  # def experimental_x(self):
+  #   '''energy (in keV)'''
+  #   return [line[3] for line in self.data]
   
-  @property
-  def experimental_y(self):
-    '''experimental spectrum (in counts)'''
-    return [line[4] for line in self.data]
+  # @property
+  # def experimental_y(self):
+  #   '''experimental spectrum (in counts)'''
+  #   return [line[4] for line in self.data]
 
   @property
   def exp_sum(self):
@@ -200,7 +199,7 @@ def ruthelde_simulate(input_data):
       print(f"Connected to localhost:{9090}")
 
       # Send the message
-      message = 'SIMULATE_' + input_data + "\n"
+      message = 'SIMULATE_' + json.dumps(input_data) + "\n"
       s.sendall(message.encode('utf-8'))
       print(f"Succeeded in sending messsage")
 
@@ -226,9 +225,15 @@ def ruthelde_simulate(input_data):
           break
       
       print(f"Received response: {response.decode('utf-8')}")
-
-      return response.decode('utf-8')
+      response = response.decode('utf-8')
+      start_index = response.find("SIM-RESULT_") + len("SIM-RESULT_")
+      end_index = response.find("End_Of_Transmission")
+      Simulation_output_json = response[start_index:end_index].strip()
+      return json.loads(Simulation_output_json)
+      
 
   except Exception as ex:
-      print("Error sending request to server.")
-      print(ex)
+    print("Error sending request to server.")
+    print(ex)
+    print(response)
+    raise ValueError('Error in Ruthelde8 (client or server.)')
