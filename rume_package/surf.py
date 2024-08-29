@@ -1,3 +1,8 @@
+"""
+This file does the calculations for RutheldeSimulation.
+It contains very litle to no functionality.
+"""
+
 import os
 import json
 from math import pi, sin, radians, sqrt, cos

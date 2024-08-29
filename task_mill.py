@@ -1,9 +1,16 @@
+"""
+This is the main script of rume. Run it with a
+batch script and provide a task file as an argument.
+
+The program will start a local Ruthelde8 server and communicate
+with it using sockets.
+"""
+
 import rume_package
 import json
 import sys
 import os
 import subprocess
-import time
 
 # The script needs a task-input file
 if len(sys.argv) == 1:
@@ -18,7 +25,6 @@ print('Starting the Java Ruthelde Server.')
 java_server_process = subprocess.Popen(['java', '-jar', 'Ruthelde_Server.jar'], 
     stdout=subprocess.DEVNULL, 
     stderr=subprocess.STDOUT)
-# time.sleep(2)
 os.chdir('..')
 
 # Make sure to work from where the .bat was executed
@@ -37,6 +43,7 @@ with open(sys.argv[1], 'r') as f:
   task_data = json.load(f)
 
 if type(task_data) is list:
+  # data is already strucuted correctly (a list of task)
   pass
 elif type(task_data) is dict:
   # As the program expects a list of tasks,
@@ -49,8 +56,9 @@ csv_logger.clear_file()
 
 plot_index = 1
 
+# loop over the tasks
 for task in task_data:
-  # execute the tasks
+  # execute each task individually
   for txt_filename in task['txt_files']:
     # create a folder to put all the files in
     folder = txt_filename.split('.imec')[0]
@@ -68,8 +76,6 @@ for task in task_data:
 
     # Run the Ruthelde Simulation
     simulation.run(input_data=work_json_data, working_dir=WORK_DIR)
-    # simulation.run(input_file=task['json_file'], working_dir=WORK_DIR)
-
 
     # Now change the template file to get better plots
     # Change aerial density

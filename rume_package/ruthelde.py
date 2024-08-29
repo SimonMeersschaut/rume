@@ -1,6 +1,10 @@
-import os
+"""
+A RutheldeSimulation will start a simulation by 
+using the python client (written by Tobi) and 
+send a command to the server running locally.
+"""
+
 import json
-import glob 
 from .surf import Q_COULOMB, table
 from . import surf
 import socket
@@ -10,7 +14,7 @@ from .surf import table
 ISOTOPE = '4He'
 
 class RutheldeSimulation:
-
+  """This object will interact with the Ruthelde8 server and start a simulation."""
   def __init__(self, normalization_interval):
     """
     input_file: .json
@@ -87,38 +91,6 @@ class RutheldeSimulation:
       
   def to_channel(self, x):
     return (x-self.offset)/self.step
-
-  # @property
-  # def spectrum_name(self):
-  #   return self.content.split('</Header>')[0].split('<Header>')[-1].split('Spectra - ')[1].split('\n')[0]
-  
-  # @property
-  # def data(self):
-  #   return [[float(datapoint) for datapoint in line.split()] for line in self.content.split('</Header>')[-1].split('\n') if len(line.split()) > 0]
-  
-  # @property
-  # def channel(self):
-  #   return [line[0] for line in self.data]
-  
-  # @property
-  # def simulated_x(self):
-  #   '''energy (in keV)'''
-  #   return [line[1] for line in self.data]
-  
-  # @property
-  # def simulated_y(self):
-  #   '''simulated spectrum (in counts)'''
-  #   return [line[2] for line in self.data]
-  
-  # @property
-  # def experimental_x(self):
-  #   '''energy (in keV)'''
-  #   return [line[3] for line in self.data]
-  
-  # @property
-  # def experimental_y(self):
-  #   '''experimental spectrum (in counts)'''
-  #   return [line[4] for line in self.data]
 
   @property
   def exp_sum(self):

@@ -1,3 +1,10 @@
+"""
+This file is only used to generate plots.
+You can only use it by importing it in an other file
+such as task_mill.py which will generate plots of 
+the simulations.
+"""
+
 from .ruthelde import RutheldeSimulation
 import time
 import matplotlib
