@@ -65,6 +65,7 @@ for task in task_data:
     os.mkdir(folder)
     # copy the model to the folder
     with open(task['json_file'], 'r') as f:
+      rume_package.checks.check_sim_input(json.load(f))
       with open(folder+'/'+task['json_file'], 'w') as f_copy:
         f_copy.write(f.read())
 
