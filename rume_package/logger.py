@@ -95,7 +95,7 @@ class CSVLogger:
             # also write to a backup file
             with open(BCKP_CSV_FILE, 'a+', encoding='utf-8') as f:
                 # include an empty line
-                f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S')+'\n')
                 f.write(content)
                 f.write('\n')
         except PermissionError:
