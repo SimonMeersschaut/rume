@@ -14,11 +14,10 @@ import subprocess
 
 # The script needs a task-input file
 if len(sys.argv) == 1:
-  input('[ERROR] please provide a task file.')
-  exit()
-
+  raise ValueError('Please provide a task file and drag it to the special batch file.')
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
+
 # Start Ruthelde Server
 os.chdir(f'{dir_path}/rume_package/')
 print('Starting the Java Ruthelde Server.')
@@ -27,18 +26,15 @@ java_server_process = subprocess.Popen(['java', '-jar', 'Ruthelde_Server.jar'],
     stderr=subprocess.STDOUT)
 os.chdir('..')
 
-# Make sure to work from where the .bat was executed
+# store the path
 WORK_DIR = os.path.dirname(sys.argv[1])
 os.chdir(WORK_DIR)
 
-# A basic check
-if not os.path.exists('data') or not os.path.isdir('data'):
-  os.mkdir('data')
-  input('[ERROR] Make sure to put your .imec files in the new "data" folder.')
-  exit()
-
+# check if there is a data folder
+rume_package.checks.check_for_data_folder()
 
 # read task file
+rume_package.checks.check_task_filename(sys.argv[1])
 with open(sys.argv[1], 'r') as f:
   task_data = json.load(f)
 
@@ -58,53 +54,64 @@ plot_index = 1
 
 # loop over the tasks
 for task in task_data:
-  # execute each task individually
-  for txt_filename in task['txt_files']:
-    # create a folder to put all the files in
-    folder = txt_filename.split('.imec')[0]
-    os.mkdir(folder)
-    # copy the model to the folder
-    with open(task['json_file'], 'r') as f:
-      rume_package.checks.check_sim_input(json.load(f))
-      with open(folder+'/'+task['json_file'], 'w') as f_copy:
-        f_copy.write(f.read())
+  try:
+    # execute each task individually
+    for txt_filename in task['txt_files']:
+      # create a folder to put all the files in
+      folder = txt_filename.split('.imec')[0]
+      try:
+        os.mkdir(folder)
+      except FileExistsError:
+        pass
+      # copy the model to the folder
+      with open(task['json_file'], 'r') as f:
+        rume_package.checks.check_sim_input(json.load(f))
+        with open(folder+'/'+task['json_file'], 'w') as f_copy:
+          f_copy.write(f.read())
 
-    # Combine .json and .imec into .dat for Ruthelde
-    work_json_data = rume_package.combine(task['json_file'], 'data/'+txt_filename)
+      # Combine .json and .imec into .dat for Ruthelde
+      work_json_data = rume_package.combine(task['json_file'], 'data/'+txt_filename)
 
-    # Initialize a simulation
-    simulation = rume_package.RutheldeSimulation(normalization_interval=task['normalization_interval'])
+      # Initialize a simulation
+      simulation = rume_package.RutheldeSimulation(normalization_interval=task['normalization_interval'])
 
-    # Run the Ruthelde Simulation
-    simulation.run(input_data=work_json_data, working_dir=WORK_DIR)
+      # Run the Ruthelde Simulation
+      simulation.run(input_data=work_json_data, working_dir=WORK_DIR)
 
-    # Now change the template file to get better plots
-    # Change aerial density
-    simulation.update_aerial_density(task=task, template_file=task['json_file'])
+      # Now change the template file to get better plots
+      # Change aerial density
+      simulation.update_aerial_density(task=task, template_file=task['json_file'])
 
-    # Change chargea
-    simulation.update_charge(charge=simulation.q*(10**6), template_file=task['json_file'])
+      # Change chargea
+      simulation.update_charge(charge=simulation.q*(10**6), template_file=task['json_file'])
 
-    # write the output in a csv file and csv backup file
-    csv_logger.log_simulation(simulation, task, txt_filename)
+      # write the output in a csv file and csv backup file
+      csv_logger.log_simulation(simulation, task, txt_filename)
 
-    # Combine .json and .imec into .dat for Ruthelde
-    work_json_data = rume_package.combine(task['json_file'], 'data/'+txt_filename)
+      # Combine .json and .imec into .dat for Ruthelde
+      work_json_data = rume_package.combine(task['json_file'], 'data/'+txt_filename)
 
-    # Run a new simulation
-    simulation = rume_package.RutheldeSimulation(normalization_interval=task['normalization_interval'])
-    simulation.run(input_data=work_json_data, working_dir=WORK_DIR)
+      # Run a new simulation
+      simulation = rume_package.RutheldeSimulation(normalization_interval=task['normalization_interval'])
+      simulation.run(input_data=work_json_data, working_dir=WORK_DIR)
 
-    with open(folder+'/output.work.json', 'w+') as f:
-      json.dump(simulation.json_data, f)
+      with open(folder+'/output.work.json', 'w+') as f:
+        json.dump(simulation.json_data, f)
 
-    # Save two plots as png (cartesian & logaritmic)
-    rume_package.plot(simulation, folder+"/rume-plot-cart.work.png", show_graph=False, save_image=True, y_log=False)
-    rume_package.plot(simulation, folder+"/rume-plot-log.work.png", show_graph=False, save_image=True, y_log=True)
-    plot_index +=1
+      # Save two plots as png (cartesian & logaritmic)
+      rume_package.plot(simulation, folder+"/rume-plot-cart.work.png", show_graph=False, save_image=True, y_log=False)
+      rume_package.plot(simulation, folder+"/rume-plot-log.work.png", show_graph=False, save_image=True, y_log=True)
+      plot_index +=1
 
-  # Write the registered content to the csv file
-  csv_logger.write()
+      print(f'Done analysing {txt_filename}')
+
+    # Write the registered content to the csv file
+    csv_logger.write()
+
+  except Exception as e:
+    # Write the registered content to the csv file
+    csv_logger.write()
+    raise e
 
 # Kill Ruthelde Server
 print('Stopping the Ruthelde Server.')

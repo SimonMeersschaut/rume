@@ -24,15 +24,13 @@ class PlotOptions:
   second_marker_size = 10
 
 def plot(simulation:RutheldeSimulation, filename: str, y_log: bool, show_graph: bool, save_image: bool) -> None:
-  simulation = simulation
-  
   matplotlib.rcParams.update({'font.size': 14})
   matplotlib.rc('xtick', labelsize=10) 
   matplotlib.rc('ytick', labelsize=10) 
 
   fig = plt.figure()
   ax1 = fig.add_subplot(111)
-  plt.title(simulation.json_data['SampleId'], fontdict={'fontsize':10}, loc='left')
+  plt.title(simulation.json_data['Title'], fontdict={'fontsize':10}, loc='left')
   ax1.set_xlabel(PlotOptions.first_x_label)
   ax1.set_ylabel(PlotOptions.y_label)
 

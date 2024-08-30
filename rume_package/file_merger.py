@@ -10,15 +10,14 @@ def combine(json_file:str, data_file:str) -> dict:
   with open(data_file, 'r') as f:
     content = f.read()
   y_values = [int(line.split(', ')[1]) for line in content.split('End comments')[-1].split('\n') if len(line.split(', ')) > 1]
+  if len(y_values) > 1024:
+    print('[WARNING] The length of your txt file was more than 1024, automatically cropped the data.')
 
   # load json file
   with open(json_file, 'r') as f:
     data = json.load(f)
   data['experimentalSpectrum'] = y_values
   data['SampleId'] = content.split(' * Sample ID             := ')[1].split('\n')[0]
+  data['Title'] = content.split(' % Title                 := ')[1].split('\n')[0]
 
-  # dir_path = os.path.dirname(os.path.realpath(__file__))
-  # filename = json_file.split('/')[-1].split('\\')[-1].split('.')[0] + '.work.json'
-  # with open(filename, 'w+') as f:
-  #   json.dump(data, f)
   return data

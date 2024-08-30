@@ -25,29 +25,16 @@ class RutheldeSimulation:
     self.simulated_y = []
   
   def run(self, input_data:dict, working_dir) -> None:
-    # Run the Ruthelde Simulation
-    # self.json_data = ruthelde_simulate(json.dumps(input_data))
-
     self.json_data = input_data
 
     # Run the Ruthelde Simulation
-    # try:
     self.simulation_output = ruthelde_simulate(input_data)
-    # except:
-    # if self.simulation_output is None:
-      # raise FileNotFoundError('No response from the server.')
 
-    print(self.simulation_output)
-    
     # simulation is done
     # set attributes
     self.experimental_y = self.json_data['experimentalSpectrum']
     self.channel = list(range(len(self.experimental_y)))
     self.simulated_y = self.simulation_output['spectra'][0]['data']
-    # self.sim_sum = sum(self.simulated_y)
-#
-    # self.step = (self.simulated_x[-1] - self.simulated_x[0])/(self.channel[-1] - self.channel[0])
-  #   self.offset = self.simulated_x[0]
   
   def update_aerial_density(self, task, template_file):
     """Update the aerial density from the working file to the template file."""
@@ -168,16 +155,13 @@ def ruthelde_simulate(input_data):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
       # Connect to the server
       s.connect(("localhost", 9090))
-      print(f"Connected to localhost:{9090}")
 
       # Send the message
       message = 'SIMULATE_' + json.dumps(input_data) + "\n"
       s.sendall(message.encode('utf-8'))
-      print(f"Succeeded in sending messsage")
 
       end_of_transmission = "End_Of_Transmission\n"
       s.sendall(end_of_transmission.encode('utf-8'))
-      print(f"Succeeded in sending transmission signal: {end_of_transmission}")
 
       # Wait for response
       response = b""
@@ -193,10 +177,9 @@ def ruthelde_simulate(input_data):
           response += part
         except socket.timeout:
           # If we hit a timeout, assume no more data is coming
-          print("Timeout reached, assuming end of message")
+          # print("Timeout reached, assuming end of message")
           break
       
-      print(f"Received response: {response.decode('utf-8')}")
       response = response.decode('utf-8')
       start_index = response.find("SIM-RESULT_") + len("SIM-RESULT_")
       end_index = response.find("End_Of_Transmission")

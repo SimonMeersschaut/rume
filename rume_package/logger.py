@@ -7,6 +7,7 @@ It will store all the registered information in self.samples, in which each item
 
 from .surf import table
 import math
+from datetime import datetime
 
 DELIMITER = ','
 ISOTOPE = '4He'
@@ -19,8 +20,11 @@ class CSVLogger:
         self.samples = []
     
     def clear_file(self):
-        with open(CSV_FILE, 'w+') as f:
-            f.write('')
+        try:
+            with open(CSV_FILE, 'w+') as f:
+                f.write('')
+        except PermissionError:
+            raise PermissionError('Could not open the csv file. Mayble you opened it?')
     
     def log_simulation(self, simulation, task, txt_filename):
         """Save a RutheldeSimulation object in a csv file and a csv-backup file."""
@@ -45,7 +49,11 @@ class CSVLogger:
                 DNt = Nt * droi_sum
 
             sample.append((subject['element'], Nt))
-            sample.append((f'error {subject['element']}', DNt))
+            sample.append((f"stat uncertainty {subject['element']}", DNt))
+            abs_error = math.sqrt(min(0.2, Nt/4)**2 + (Nt*0.02)**2)
+            sample.append((f"Abs error {subject['element']}", abs_error))
+            total_uncertainty = min(DNt+abs_error, Nt)
+            sample.append((f"Total Uncertainty {subject['element']}", total_uncertainty))
         
         self.samples.append(sample)
     
@@ -87,11 +95,11 @@ class CSVLogger:
             # also write to a backup file
             with open(BCKP_CSV_FILE, 'a+', encoding='utf-8') as f:
                 # include an empty line
+                f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
                 f.write(content)
                 f.write('\n')
         except PermissionError:
-            input('[ERROR] PermissionError. Perhaps you already opened the file?')
-            exit()
+            raise PermissionError('Could not open the file. Perhaps you already opened the file?')
         
         # now clear the samples list so that the next tasks
         # won't have the same headings and body as this one does
