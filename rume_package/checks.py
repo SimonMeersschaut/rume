@@ -3,11 +3,14 @@ This file is used to check user input etc.
 (no functionality)
 """
 import os
+import json
 
-def check_sim_input(data: dict):
+def check_sim_input(data: dict, json_file: str):
     if not "outputOptions" in data:
         print("[WARNING] You are probably running a Ruthelde7 file.")
         data.update({"outputOptions": {}})
+        with open(json_file, 'w') as f_copy:
+            json.dump(data, f_copy)
     return data
 
 def check_task_filename(filename: str):

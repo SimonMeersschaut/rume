@@ -19,6 +19,5 @@ def combine(json_file:str, data_file:str) -> dict:
   data['experimentalSpectrum'] = y_values
   data['SampleId'] = content.split(' * Sample ID             := ')[1].split('\n')[0]
   data['Title'] = content.split(' % Title                 := ')[1].split('\n')[0]
-  
 
   return data
