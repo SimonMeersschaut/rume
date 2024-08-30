@@ -11,6 +11,7 @@ import json
 import sys
 import os
 import subprocess
+import time
 
 # The script needs a task-input file
 if len(sys.argv) == 1:
@@ -67,8 +68,9 @@ for task in task_data:
       with open(task['json_file'], 'r') as f:
         data = json.load(f)
         data = rume_package.checks.check_sim_input(data)
-        with open(folder+'/'+task['json_file'], 'w') as f_copy:
-          json.dump(data, f_copy)
+      with open(folder+'/'+task['json_file'], 'w') as f_copy:
+        f.write(json.dumps(data), f_copy)
+      time.sleep(.001)
 
       # Combine .json and .imec into .dat for Ruthelde
       work_json_data = rume_package.combine(task['json_file'], 'data/'+txt_filename)
