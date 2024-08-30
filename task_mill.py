@@ -65,9 +65,10 @@ for task in task_data:
         pass
       # copy the model to the folder
       with open(task['json_file'], 'r') as f:
-        rume_package.checks.check_sim_input(json.load(f))
+        data = json.load(f)
+        data = rume_package.checks.check_sim_input(data)
         with open(folder+'/'+task['json_file'], 'w') as f_copy:
-          f_copy.write(f.read())
+          json.dump(data, f_copy)
 
       # Combine .json and .imec into .dat for Ruthelde
       work_json_data = rume_package.combine(task['json_file'], 'data/'+txt_filename)

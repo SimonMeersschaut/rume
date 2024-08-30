@@ -6,7 +6,9 @@ import os
 
 def check_sim_input(data: dict):
     if not "outputOptions" in data:
-        print("[WARNING] You are probably running a Ruthelde7 file. This file might not contain all keywords.")
+        print("[WARNING] You are probably running a Ruthelde7 file.")
+        data.update({"outputOptions": {}})
+    return data
 
 def check_task_filename(filename: str):
     if not '.rume.json' in filename:
