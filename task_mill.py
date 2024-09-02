@@ -68,9 +68,10 @@ for task in task_data:
       with open(task['json_file'], 'r') as f:
         # perform check
         data = rume_package.checks.check_sim_input(json.load(f), task['json_file'])
-        # copy
+
+        # copy updated data to a duplicate
         with open(folder+'/'+task['json_file'], 'w') as f_copy:
-          f_copy.write(f.read())
+          json.dump(data, f_copy)
 
       # Combine .json and .imec into .dat for Ruthelde
       work_json_data = rume_package.combine(task['json_file'], 'data/'+txt_filename)
